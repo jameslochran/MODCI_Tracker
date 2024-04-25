@@ -1,3 +1,0 @@
-﻿Division,Jira_ticket,State,Name,Notes,Merge,Legacy_URL,New_URL,Page_title
-DCI,123,Backlog,Jim,Test,Merge ⬆️,Test url,New url,Test
-DCI,568,Done,Alice,Testing the notes field,Merge ⬆️,http://google.com,https://google.com,Test

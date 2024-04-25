@@ -20,7 +20,7 @@ c.execute(""" CREATE TABLE if not exists tracker_mgr(id INTEGER PRIMARY KEY AUTO
                                                      );""")
 
 
-# with open('data.csv', 'r') as csvfile:
+# with open('Appendix 5.csv', 'r') as csvfile:
 #     csvreader = csv.reader(csvfile)
 
 #     # Skip the header row
@@ -33,8 +33,8 @@ c.execute(""" CREATE TABLE if not exists tracker_mgr(id INTEGER PRIMARY KEY AUTO
 #                     (Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title))
 
 
-# # Commit the changes and close the connection
-#     conn.commit()
+# Commit the changes and close the connection
+    # conn.commit()
     # conn.close()
 
 
