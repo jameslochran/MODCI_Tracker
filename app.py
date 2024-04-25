@@ -1,0 +1,306 @@
+import streamlit as st
+import sqlite3
+import csv
+import pandas as pd
+
+# Connect to the SQLite database
+conn = sqlite3.connect('database.db')
+c = conn.cursor()
+
+c.execute(""" CREATE TABLE if not exists tracker_mgr(id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                     Division varchar(255) not null,
+                                                     Jira_ticket varchar(255) not null,
+                                                     State varchar (50) not null,
+                                                     Name varchar (50) not null,
+                                                     Notes varchar (500) not null,
+                                                     Merge varchar(50) not null,
+                                                     Legacy_URL varchar(255) not null,
+                                                     New_URL varchar(255) not null,  
+                                                     Page_title varchar(255) not null
+                                                     );""")
+
+
+# with open('data.csv', 'r') as csvfile:
+#     csvreader = csv.reader(csvfile)
+
+#     # Skip the header row
+#     next(csvreader)
+
+#     # Insert data from CSV into the database
+#     for row in csvreader:
+#         Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title = row
+#         c.execute("INSERT INTO tracker_mgr (Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+#                     (Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title))
+
+
+# # Commit the changes and close the connection
+#     conn.commit()
+    # conn.close()
+
+
+
+
+
+
+# CRUD functions
+# Create a new entry
+def create_entry(Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title):
+    c.execute("INSERT INTO tracker_mgr (Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)",
+              (Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title))
+    conn.commit()
+
+# Read entries
+def read_entries(Name=None):
+    if Name:
+        c.execute("SELECT * FROM tracker_mgr WHERE Name=?", (Name,))
+    else:
+        c.execute("SELECT * FROM tracker_mgr")
+    return c.fetchall()
+
+# Update an entry
+def update_entry(Division=None, Jira_ticket=None, State=None, Name=None, Note=None, Merge=None, Legacy_URL=None, New_URL=None, Page_title=None):
+    data = []
+    set_clause = []
+    if Division:
+        set_clause.append("Division=?")
+        data.append(Division)
+    if Jira_ticket:
+        set_clause.append("Jira_ticket=?")
+        data.append(Jira_ticket)
+    if State:
+        set_clause.append("State=?")
+        data.append(State)
+    if Name:
+        set_clause.append("Name=?")
+        data.append(Name)
+    if Notes:
+        set_clause.append("Notes=?")
+        data.append(Notes)
+    if Merge:
+        set_clause.append("Merge=?")
+        data.append(Merge)
+    if Legacy_URL:
+        set_clause.append("Legacy_URL=?")
+        data.append(Legacy_URL)
+    if New_URL:
+        set_clause.append("New_URL=?")
+        data.append(New_URL)
+    if Page_title:
+        set_clause.append("Page_title=?")
+        data.append(Page_title)
+    set_clause = ", ".join(set_clause)
+    data.append(id)
+    c.execute(f"UPDATE tracker_mgr SET {set_clause} WHERE id=?", data)
+    conn.commit()
+
+# Delete an entry
+def delete_entry(id):
+    c.execute("DELETE FROM tracker_mgr WHERE id=?", (id,))
+    conn.commit()
+
+# Close the database connection
+# conn.close()
+
+def save_to_db(edited_df):
+    # Connect to the SQLite database
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+
+    # Convert dataframe to list of tuples
+    rows = [tuple(row) for row in edited_df.to_numpy()]
+
+    # Clear the existing data in the table
+    c.execute("DELETE FROM tracker_mgr")
+
+    # Insert the new data
+    c.executemany("INSERT INTO tracker_mgr VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?)", rows)
+
+    # Commit the changes and close the connection
+    conn.commit()
+    # conn.close()
+
+
+def main():
+    # Streamlit-related code goes here
+    st.set_page_config(page_title="Migration Tracker", page_icon="📄", initial_sidebar_state="collapsed", layout="wide", menu_items={'About': "# This is a header. This is an *extremely* cool app!"})
+    
+    # st.image('SEO-Website-Migration-Strategy-Guide-1.png')
+    st.title('Migration tracker')
+    st.divider()
+    col1, col2, col11 = st.columns(3)
+    
+   
+    menu = ["View all", "Create",]
+    choice = col1.selectbox("View all pages or create a new page", menu)
+
+    progress = ['Backlog','In Progress', 'Content Review', 'Client Review', 'Done', 'Mot Prioritized', 'Not migrating', 'Blocked']
+    merge = ["Merge ⬆️", "Merge ⬇️"] 
+    users = ['Jim', 'Sarah P', 'Sarah C', 'Alice', 'Open']
+    divisions = ['DCI','Insurance','Finance', 'Credit Unions', 'OPC']
+
+    config = {
+      'Division' : st.column_config.SelectboxColumn('Division',options=divisions),  
+      'Jira_ticket': st.column_config.TextColumn('Jira Ticket'), 
+      'State' : st.column_config.SelectboxColumn('State', options=progress, default='Backlog'),
+      'Name' : st.column_config.SelectboxColumn('Name', options=users),
+      'Merge' : st.column_config.SelectboxColumn('Merge', options=merge, width="Large"),
+      'Notes': st.column_config.TextColumn('Notes', width="Large"),
+      'New_URL': st.column_config.TextColumn('New URL', width="Medium"),
+      'Legacy_URL': st.column_config.LinkColumn('Legacy URL', help="URL to old site", validate="^https://[a-z]+\.streamlit\.app$",
+            max_chars=100,),
+       'Page_title': st.column_config.TextColumn('Page Title')
+    }
+
+
+
+
+
+    if choice == "Create":
+        st.subheader("Create a new entry")
+        Division = st.text_input("Division")
+        Jira_ticket = st.text_input("Jira_ticket")
+        State = st.text_input("State")
+        Name = st.text_input("Name")
+        Notes = st.text_area("Notes")
+        Merge = st.text_input("Merge")
+        Legacy_URL = st.text_input("Legacy URL")
+        New_URL = st.text_input("New URL")
+        Page_title = st.text_input("Page Title")
+
+        if st.button("Create"):
+            create_entry(Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title)
+            st.success("Entry created successfully!")
+
+    elif choice == "View all":
+        st.subheader("Page Migrations")
+        st.write('Track the progress of individual page migration status for the project') 
+        col3, col4, col5 = st.columns(3)
+        st.write('Filter results')
+        page_num = col3.text_input("The name of the user (leave blank to show all)")
+        # if st.button("Read"):
+        entries = read_entries(page_num if page_num else None)
+        for entry in entries:
+            # st.write(entry)
+            # st.table(entries)
+            columns = [desc[0] for desc in c.description]
+            df = pd.DataFrame(entries, columns=columns)
+        edited_df = st.data_editor((df), column_config=config, column_order=('Division','Jira_ticket', 'State', 'Name', 'Notes','Merge','Legacy_URL','New_URL', 'Page_title'),key=1234)
+        st.write('Make sure you save your changes')
+
+        if st.button("Save to Database"):
+            save_to_db(edited_df)
+                
+            st.success("Data saved to database successfully!")
+
+    
+
+        st.header('Migration Stats')  
+        st.divider() 
+        try: inprog = edited_df.groupby('State').size()['In Progress']  
+        except KeyError:
+            inprog = 0
+
+        try: backlog = edited_df['State'].value_counts()['Backlog']  
+        except KeyError:
+            backlog = 0
+
+        try: done = edited_df['State'].value_counts()['Done'] 
+        except KeyError:
+            done = 0 
+
+        try: review = edited_df['State'].value_counts()['Client Review']
+        except KeyError:
+            review = 0   
+
+        try: content = edited_df['State'].value_counts()['Content Review'] 
+        except KeyError:
+            content = 0 
+
+        countofRows = len(edited_df)
+
+        bcklog=round(backlog/countofRows*100)
+        inp = round(inprog/countofRows*100)
+        cont = round(content/countofRows*100)
+        rev = round(review/countofRows*100)
+        don = round(done/countofRows*100)
+
+
+
+        with st.expander("Story Metrics"):
+            st.write('Story status metrics')
+            col1, col2, col3, col4, col5 = st.columns(5)
+            col1.metric("Backlog", backlog)
+            col1.metric('% ', bcklog)
+            col2.metric("In Progress", inprog)
+            col2.metric("%", inp)
+            col3.metric("Content Review", content)
+            col3.metric("%", cont)
+            col4.metric("Client Review", review)
+            col4.metric("%", rev)
+            col5.metric("Done", done)
+            col5.metric("%", don)
+        
+        try: u1 = edited_df.groupby('Name').size()[users[0]]  
+        except KeyError:
+            u1 = 0
+
+        try: u2 = edited_df.groupby('Name').size()[users[1]]  
+        except KeyError:
+            u2 = 0
+
+        try: u3 = edited_df.groupby('Name').size()[users[2]]  
+        except KeyError:
+            u3 = 0
+
+        try: u4 = edited_df.groupby('Name').size()[users[3]]  
+        except KeyError:
+            u4 = 0  
+
+        try: u5 = edited_df.groupby('Name').size()[users[4]]  
+        except KeyError:
+            u5 = 0
+             
+        
+        with st.expander("Migrator Metrics"):
+            st.write('Number of stories assigned to each migrator')
+            col6, col7, col8, col9, col10 = st.columns(5)
+            col6.metric(users[0], u1)
+            col7.metric(users[1], u2)
+            col8.metric(users[2], u3)
+            col9.metric(users[3], u4)
+            col10.metric(users[4], u5)
+
+
+
+    
+
+
+    elif choice == "Update":
+        st.subheader("Update an entry")
+        st.subheader("Create a new entry")
+        Division = st.text_input("Division")
+        Jira_ticket = st.text_input("Jira_ticket")
+        State = st.text_input("State")
+        Name = st.text_input("Name")
+        Notes = st.text_area("Notes")
+        Merge = st.text_input("Merge")
+        Legacy_URL = st.text_input("Legacy URL")
+        New_URL = st.text_input("New URL")
+        Page_title = st.text_input("Page Title")
+
+        if st.button("Update"):
+            update_entry(Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title)
+            st.success("Entry updated successfully!")
+
+    elif choice == "Delete":
+        st.subheader("Delete an entry")
+        page_num = st.text_input("Page Number")
+        if st.button("Delete"):
+            delete_entry(page_num)
+            st.success("Entry deleted successfully!")
+
+   
+
+if __name__ == '__main__':
+    main()
+    conn.close()
