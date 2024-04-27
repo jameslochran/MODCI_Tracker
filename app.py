@@ -50,9 +50,9 @@ def create_entry(Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, N
     conn.commit()
 
 # Read entries
-def read_entries(Name=None):
-    if Name:
-        c.execute("SELECT * FROM tracker_mgr WHERE Name=?", (Name,))
+def read_entries(Division=None):
+    if Division:
+        c.execute("SELECT * FROM tracker_mgr WHERE Division=?", (Division,))
     else:
         c.execute("SELECT * FROM tracker_mgr")
     return c.fetchall()
@@ -101,23 +101,66 @@ def delete_entry(id):
 # Close the database connection
 # conn.close()
 
-def save_to_db(edited_df):
+def save_to_db(df):
     # Connect to the SQLite database
     conn = sqlite3.connect('database.db')
-    c = conn.cursor()
+    # c = conn.cursor()
+    cursor = conn.cursor()
+
+    for index, row in df.iterrows():
+        try:
+    # Construct the SQL UPDATE statement
+            
+            sql = "UPDATE tracker_mgr SET Division = ?, Jira_ticket = ?, State = ?, Name = ?, Notes = ?, Merge = ?, Legacy_URL = ?, New_URL = ?, Page_title = ? WHERE id = ?"
+            values = (row['Division'], row['Jira_ticket'], row['State'], row['Name'], row['Notes'], row['Merge'], row['Legacy_URL'], row['New_URL'], row['Page_title'], row['id'])
+
+    # Execute the SQL statement
+            cursor.execute(sql, values)
+        except sqlite3.Error as e:
+            print(f"Error updating row {index}: {e}")
+            continue
 
     # Convert dataframe to list of tuples
-    rows = [tuple(row) for row in edited_df.to_numpy()]
+    # rows = [tuple(row) for row in edited_df.to_numpy()]
+    # edited_rows = [tuple(row) for row in edited_df.to_numpy()]
+    # original_rows = [tuple(row) for row in changed_df.to_numpy()]
 
     # Clear the existing data in the table
-    c.execute("DELETE FROM tracker_mgr")
+    # c.execute("DELETE FROM tracker_mgr")
+    # Find the rows that have been changed
+    # changed_rows = [edited_row for edited_row in edited_rows if edited_row not in original_rows]
 
     # Insert the new data
-    c.executemany("INSERT INTO tracker_mgr VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?)", rows)
+    # c.executemany("INSERT INTO tracker_mgr VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?)", rows)
+     # Update the changed rows in the database
+    # for changed_row in changed_rows:
+        # c.execute("UPDATE tracker_mgr SET id=?, Division=?, Jira_ticket=?, State=?, Name=?, Notes=?, Merge=?,Legacy_URL=?,New_URL=?,Page_title=? WHERE id=? AND Division=? AND Jira_ticket=? AND State=? AND Name=? AND Notes=? AND Merge=? AND Legacy_URL=? AND New_URL=? AND Page_title=?", changed_row + changed_row)
 
     # Commit the changes and close the connection
-    conn.commit()
-    # conn.close()
+        try:
+            conn.commit()
+        except sqlite3.Error as e:
+            print(f"error committing changes:{e}")
+            return
+        
+       
+        # try:
+        #     conn.close()
+        # except sqlite3.Error as e:
+        #     print(f"Error closing the database connection: {e}")
+
+# def get_changed_rows(edited_df, original_df):
+#     # Convert dataframes to lists of tuples
+#     edited_rows = [tuple(row) for row in edited_df.to_numpy()]
+#     original_rows = [tuple(row) for row in original_df.to_numpy()]
+
+#     # Find the rows that have been changed
+#     changed_rows = [row for row in edited_rows if row not in original_rows]
+
+#     # Create a new DataFrame with the changed rows
+#     changed_df = pd.DataFrame(changed_rows, columns=edited_df.columns)
+    
+#     return changed_df
 
 
 def main():
@@ -133,12 +176,13 @@ def main():
     menu = ["View all", "Create",]
     choice = col1.selectbox("View all pages or create a new page", menu)
 
-    progress = ['Backlog','In Progress', 'Content Review', 'Client Review', 'Done', 'Mot Prioritized', 'Not migrating', 'Blocked']
+    progress = ['Backlog','In Progress', 'Content Review', 'Client Review', 'Done', 'Not Prioritized', 'Not migrating', 'Blocked']
     merge = ["Merge ⬆️", "Merge ⬇️"] 
     users = ['Jim', 'Sarah P', 'Sarah C', 'Alice', 'Open']
     divisions = ['DCI','Insurance','Finance', 'Credit Unions', 'OPC']
 
     config = {
+      
       'Division' : st.column_config.SelectboxColumn('Division',options=divisions),  
       'Jira_ticket': st.column_config.TextColumn('Jira Ticket'), 
       'State' : st.column_config.SelectboxColumn('State', options=progress, default='Backlog'),
@@ -175,22 +219,77 @@ def main():
         st.subheader("Page Migrations")
         st.write('Track the progress of individual page migration status for the project') 
         col3, col4, col5 = st.columns(3)
+        dmenu = ["","DCI", "Insurance"]
+        dchoice = col3.selectbox("Select a division", dmenu)
         st.write('Filter results')
-        page_num = col3.text_input("The name of the user (leave blank to show all)")
+        # page_num = col3.text_input("The name of the user (leave blank to show all)")
+        page_num = dchoice
+                
         # if st.button("Read"):
+        showall = read_entries(None)
+        for allentry in showall:
+            # st.write(entry)
+            # st.table(entries)
+            columns = [desc[0] for desc in c.description]
+            df_all = pd.DataFrame(showall, columns=columns)
+
         entries = read_entries(page_num if page_num else None)
         for entry in entries:
             # st.write(entry)
             # st.table(entries)
             columns = [desc[0] for desc in c.description]
             df = pd.DataFrame(entries, columns=columns)
-        edited_df = st.data_editor((df), column_config=config, column_order=('Division','Jira_ticket', 'State', 'Name', 'Notes','Merge','Legacy_URL','New_URL', 'Page_title'),key=1234)
+        st.dataframe(df_all)    
+        edited_df = st.data_editor((df), column_config=config, column_order=('id','Division','Jira_ticket', 'State', 'Name', 'Notes','Merge','Legacy_URL','New_URL', 'Page_title'),key="data_editor")
         st.write('Make sure you save your changes')
 
         if st.button("Save to Database"):
-            save_to_db(edited_df)
+            # changes = edited_df != df_all   
+            # # st.dataframe(changes) 
+            # changed_values = pd.DataFrame(columns=df_all.columns)
+            # for col in df_all.columns:
+            #     if changes[col].any():
+            #         changed_values[col] = edited_df.loc[changes[col], col]
+            # st.write('change values')        
+            # st.dataframe(changed_values)        
+
+            # all_rows = pd.concat([df_all, edited_df]).drop_duplicates(keep=False)
+
+            # st.write('All Rows')
+            # st.dataframe(all_rows)
+
+                        
+            # result = pd.concat([changed_values, all_rows])
+            # st.write('results')
+            # st.dataframe(result)
+            changes = edited_df != df_all
+             
+            changed_rows = edited_df.loc[changes.any(axis=1)] 
+            st.dataframe(changed_rows)
+
+
+
+
+            # df_all.update(changes) 
+
+                                  
+
+            # if "data_editor" in st.session_state:
+            #     changed_rows = st.session_state["data_editor"]["edited_rows"]
+            #     changed_rows
+               
+            
+            # changed_df = pd.DataFrame.from_dict(changed_rows, orient='index')
+            # # results = edited_df.loc[changed_df]
+           
+            # st.dataframe(changed_df)
+
+                  
+            
+            save_to_db(changed_rows)
                 
             st.success("Data saved to database successfully!")
+            
 
     
 
