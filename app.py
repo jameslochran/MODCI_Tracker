@@ -173,7 +173,7 @@ def main():
     col1, col2, col11 = st.columns(3)
     
    
-    menu = ["View all", "Create",]
+    menu = ["View all", "Create", "Delete"]
     choice = col1.selectbox("View all pages or create a new page", menu)
 
     progress = ['Backlog','In Progress', 'Content Review', 'Client Review', 'Done', 'Not Prioritized', 'Not migrating', 'Blocked']
@@ -232,6 +232,8 @@ def main():
             # st.table(entries)
             columns = [desc[0] for desc in c.description]
             df_all = pd.DataFrame(showall, columns=columns)
+        if page_num == None:    
+            st.dataframe(df_all)
 
         entries = read_entries(page_num if page_num else None)
         for entry in entries:
@@ -239,7 +241,9 @@ def main():
             # st.table(entries)
             columns = [desc[0] for desc in c.description]
             df = pd.DataFrame(entries, columns=columns)
-        st.dataframe(df_all)    
+        if page_num != None:    
+            st.dataframe(df)
+        # st.dataframe(df_all)    
         edited_df = st.data_editor((df), column_config=config, column_order=('id','Division','Jira_ticket', 'State', 'Name', 'Notes','Merge','Legacy_URL','New_URL', 'Page_title'),key="data_editor")
         st.write('Make sure you save your changes')
 
@@ -262,10 +266,16 @@ def main():
             # result = pd.concat([changed_values, all_rows])
             # st.write('results')
             # st.dataframe(result)
-            changes = edited_df != df_all
+            if page_num == None:
+                changes = edited_df != df_all
              
-            changed_rows = edited_df.loc[changes.any(axis=1)] 
-            st.dataframe(changed_rows)
+                changed_rows = edited_df.loc[changes.any(axis=1)] 
+                st.dataframe(changed_rows)
+            else:
+                changes = edited_df != df
+             
+                changed_rows = edited_df.loc[changes.any(axis=1)] 
+                st.dataframe(changed_rows)
 
 
 
