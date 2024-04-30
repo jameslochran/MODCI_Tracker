@@ -20,7 +20,7 @@ c.execute(""" CREATE TABLE if not exists tracker_mgr(id INTEGER PRIMARY KEY AUTO
                                                      );""")
 
 
-# with open('Appendix 5.csv', 'r') as csvfile:
+# with open('appendix_8.csv', 'r') as csvfile:
 #     csvreader = csv.reader(csvfile)
 
 #     # Skip the header row
@@ -33,9 +33,9 @@ c.execute(""" CREATE TABLE if not exists tracker_mgr(id INTEGER PRIMARY KEY AUTO
 #                     (Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title))
 
 
-# Commit the changes and close the connection
-    # conn.commit()
-    # conn.close()
+# # Commit the changes and close the connection
+#     conn.commit()
+#     # conn.close()
 
 
 
@@ -173,7 +173,7 @@ def main():
     col1, col2, col11 = st.columns(3)
     
    
-    menu = ["View all", "Create", "Delete"]
+    menu = ["View all", "Create"]
     choice = col1.selectbox("View all pages or create a new page", menu)
 
     progress = ['Backlog','In Progress', 'Content Review', 'Client Review', 'Done', 'Not Prioritized', 'Not migrating', 'Blocked']
@@ -219,7 +219,7 @@ def main():
         st.subheader("Page Migrations")
         st.write('Track the progress of individual page migration status for the project') 
         col3, col4, col5 = st.columns(3)
-        dmenu = ["","DCI", "Insurance"]
+        dmenu = ["",'DCI','Insurance','Finance', 'Credit Unions', 'OPC']
         dchoice = col3.selectbox("Select a division", dmenu)
         st.write('Filter results')
         # page_num = col3.text_input("The name of the user (leave blank to show all)")
@@ -232,19 +232,23 @@ def main():
             # st.table(entries)
             columns = [desc[0] for desc in c.description]
             df_all = pd.DataFrame(showall, columns=columns)
-        if page_num == None:    
-            st.dataframe(df_all)
+            entries = read_entries(page_num if page_num else None)
 
-        entries = read_entries(page_num if page_num else None)
+        # with st.expander("Show raw data"):    
+        #     if page_num == None:    
+        #         st.dataframe(df_all)
+
+        #     entries = read_entries(page_num if page_num else None)
+
         for entry in entries:
             # st.write(entry)
             # st.table(entries)
             columns = [desc[0] for desc in c.description]
             df = pd.DataFrame(entries, columns=columns)
         if page_num != None:    
-            st.dataframe(df)
+            # st.dataframe(df)
         # st.dataframe(df_all)    
-        edited_df = st.data_editor((df), column_config=config, column_order=('id','Division','Jira_ticket', 'State', 'Name', 'Notes','Merge','Legacy_URL','New_URL', 'Page_title'),key="data_editor")
+            edited_df = st.data_editor((df), column_config=config, column_order=('id','Division','Jira_ticket', 'State', 'Name', 'Notes','Merge','Legacy_URL','New_URL', 'Page_title'),key="data_editor")
         st.write('Make sure you save your changes')
 
         if st.button("Save to Database"):
