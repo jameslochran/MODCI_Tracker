@@ -184,7 +184,7 @@ def main():
     config = {
       
       'Division' : st.column_config.SelectboxColumn('Division',options=divisions),  
-      'Jira_ticket': st.column_config.TextColumn('Jira Ticket'), 
+      'Jira_ticket': st.column_config.LinkColumn('Jira Ticket'),
       'State' : st.column_config.SelectboxColumn('State', options=progress, default='Backlog'),
       'Name' : st.column_config.SelectboxColumn('Name', options=users),
       'Merge' : st.column_config.SelectboxColumn('Merge', options=merge, width="Large"),
