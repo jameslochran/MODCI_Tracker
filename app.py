@@ -2,6 +2,8 @@ import streamlit as st
 import sqlite3
 import csv
 import pandas as pd
+import hmac
+import streamlit as st
 
 # Connect to the SQLite database
 conn = sqlite3.connect('database.db')
@@ -20,7 +22,7 @@ c.execute(""" CREATE TABLE if not exists tracker_mgr(id INTEGER PRIMARY KEY AUTO
                                                      );""")
 
 
-# with open('appendix_8.csv', 'r') as csvfile:
+# with open('OPC-7924 - Sheet1 (1).csv', 'r') as csvfile:
 #     csvreader = csv.reader(csvfile)
 
 #     # Skip the header row
@@ -35,12 +37,35 @@ c.execute(""" CREATE TABLE if not exists tracker_mgr(id INTEGER PRIMARY KEY AUTO
 
 # # Commit the changes and close the connection
 #     conn.commit()
-#     # conn.close()
+# #     # conn.close()
+
+#password check
+def check_password():
+    """Returns `True` if the user had the correct password."""
+
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if hmac.compare_digest(st.session_state["password"], st.secrets["password"]):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store the password.
+        else:
+            st.session_state["password_correct"] = False
+
+ # Return True if the password is validated.
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Show input for password.
+    st.text_input(
+        "Password", type="password", on_change=password_entered, key="password"
+    )
+    if "password_correct" in st.session_state:
+        st.error("😕 Password incorrect")
+    return False
 
 
-
-
-
+if not check_password():
+    st.stop()  # Do not continue if check_password is not True.
 
 # CRUD functions
 # Create a new entry
@@ -164,6 +189,7 @@ def save_to_db(df):
 
 
 def main():
+    
     # Streamlit-related code goes here
     st.set_page_config(page_title="Migration Tracker", page_icon="📄", initial_sidebar_state="collapsed", layout="wide", menu_items={'About': "# This is a header. This is an *extremely* cool app!"})
     
@@ -178,8 +204,8 @@ def main():
 
     progress = ['Backlog','In Progress', 'Content Review', 'Client Review', 'Done', 'Not Prioritized', 'Not migrating', 'Blocked']
     merge = ["Merge ⬆️", "Merge ⬇️"] 
-    users = ['Jim', 'Sarah P', 'Sarah C', 'Alice', 'Open']
-    divisions = ['DCI','Insurance','Finance', 'Credit Unions', 'OPC']
+    users = ['Jim', 'Sarah P', 'Sarah C', 'DaVaris', 'Alex', 'DCI']
+    divisions = ['DCI','Insurance','Finance', 'CU', 'OPC']
 
     config = {
       
@@ -219,7 +245,7 @@ def main():
         st.subheader("Page Migrations")
         st.write('Track the progress of individual page migration status for the project') 
         col3, col4, col5 = st.columns(3)
-        dmenu = ["",'DCI','Insurance','Finance', 'Credit Unions', 'OPC']
+        dmenu = ["",'DCI','Insurance','Finance', 'CU', 'OPC']
         dchoice = col3.selectbox("Select a division", dmenu)
         st.write('Filter results')
         # page_num = col3.text_input("The name of the user (leave blank to show all)")
