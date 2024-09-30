@@ -22,7 +22,7 @@ c.execute(""" CREATE TABLE if not exists tracker_mgr(id INTEGER PRIMARY KEY AUTO
                                                      );""")
 
 
-# with open('OPC-7924 - Sheet1 (1).csv', 'r') as csvfile:
+# with open('dcimigration.csv', 'r') as csvfile:
 #     csvreader = csv.reader(csvfile)
 
 #     # Skip the header row
@@ -30,7 +30,7 @@ c.execute(""" CREATE TABLE if not exists tracker_mgr(id INTEGER PRIMARY KEY AUTO
 
 #     # Insert data from CSV into the database
 #     for row in csvreader:
-#         Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title = row
+#         Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title, *_ = row
 #         c.execute("INSERT INTO tracker_mgr (Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 #                     (Division, Jira_ticket, State, Name, Notes, Merge, Legacy_URL, New_URL, Page_title))
 
